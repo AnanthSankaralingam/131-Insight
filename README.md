@@ -1,5 +1,9 @@
 ## How to use and build on Insight
 
+First, create your own branch:
+```bash
+git checkout -b {name}
+```
 First, run the development server:
 
 ```bash
