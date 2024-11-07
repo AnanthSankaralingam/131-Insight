@@ -25,6 +25,8 @@ We have a ui folder which holds components that we reuse for consistency. within
 we have our actual pages defined in structure of page name as the folder, and the actual code named page.tsx
 within it. KEEP THIS STYLE.
 
+![arch](https://github.com/AnanthSankaralingam/131-Insight/blob/main/Screenshot%202024-11-07%20164701.png)
+
 ## TODOs
 ### urgent
 1. finalize db for prod, storing data over time instead of individual entries. for example, entries should 
