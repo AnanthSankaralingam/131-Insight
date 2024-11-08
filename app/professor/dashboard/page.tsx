@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ChevronLeft } from 'lucide-react';
@@ -20,11 +20,13 @@ interface Feedback {
   attendanceCount: number;
   studentEngagement: number;
   topicsCovered: string[];
-  challengingConcepts: string;
+  overview: string;
   suggestions?: string;
   needsAttention: boolean;
 }
 
+//TODO: prof should be able to dismiss urgent matters and they should be removed from db
+//TODO: summarize entries from most recent date
 export default function ProfessorDashboard() {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,8 @@ export default function ProfessorDashboard() {
   useEffect(() => {
     const fetchFeedback = async () => {
       try {
-        const response = await fetch('/api/feedback?professorId=prof123');
+        // get feedback for specific name and class
+        const response = await fetch('/api/feedback?professorName=Elias%20Gonzalez&courseCode=CMSC131');
         if (!response.ok) throw new Error('Failed to fetch feedback');
         const data = await response.json();
         setFeedbacks(data);
@@ -50,27 +53,56 @@ export default function ProfessorDashboard() {
     fetchFeedback();
   }, []);
 
-  const filteredFeedbacks = feedbacks.filter(feedback => {
-    if (!dateRange?.from || !dateRange?.to) return true;
-    const feedbackDate = startOfDay(new Date(feedback.date));
-    return isWithinInterval(feedbackDate, {
-      start: startOfDay(dateRange.from),
-      end: startOfDay(dateRange.to),
+  // FIXME show sorted, with Urgent ones first  
+  // only show data based on range selected
+  const sortedFeedbacks = useMemo(() => { //useMemo hook only recalculates values when date range changes
+    return feedbacks
+      .filter(feedback => {
+        if (!dateRange?.from || !dateRange?.to) return true;
+        const feedbackDate = startOfDay(new Date(feedback.date));
+        return isWithinInterval(feedbackDate, {
+          start: startOfDay(dateRange.from),
+          end: startOfDay(dateRange.to),
+        });
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [feedbacks, dateRange]);
+
+  const engagementData = useMemo(() => {
+    const dateMap: { [key: string]: { engagement: number; attendance: number; count: number } } = {};
+
+    sortedFeedbacks.forEach((feedback) => {
+      const date = format(new Date(feedback.date), 'MMM d');
+      if (!dateMap[date]) {
+        dateMap[date] = {
+          engagement: 0,
+          attendance: 0,
+          count: 0,
+        };
+      }
+      dateMap[date].engagement += feedback.studentEngagement;
+      dateMap[date].attendance += feedback.attendanceCount;
+      dateMap[date].count += 1;
     });
-  });
 
-  const engagementData = filteredFeedbacks
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(feedback => ({
-      date: format(new Date(feedback.date), 'MMM d'),
-      engagement: feedback.studentEngagement,
-      attendance: feedback.attendanceCount
-    }));
+    return Object.keys(dateMap)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .map((date) => ({
+        date,
+        engagement: dateMap[date].engagement / dateMap[date].count,
+        attendance: dateMap[date].attendance / dateMap[date].count,
+      }));
+  }, [sortedFeedbacks]);
 
-  const urgentFeedbacks = filteredFeedbacks.filter(f => f.needsAttention);
-  const averageEngagement = filteredFeedbacks.length 
-    ? filteredFeedbacks.reduce((acc, curr) => acc + curr.studentEngagement, 0) / filteredFeedbacks.length 
-    : 0;
+  const urgentFeedbacks = useMemo(() => {
+    return sortedFeedbacks.filter(f => f.needsAttention);
+  }, [sortedFeedbacks]);
+
+  const averageEngagement = useMemo(() => {
+    return sortedFeedbacks.length
+      ? sortedFeedbacks.reduce((acc, curr) => acc + curr.studentEngagement, 0) / sortedFeedbacks.length
+      : 0;
+  }, [sortedFeedbacks]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -161,6 +193,7 @@ export default function ProfessorDashboard() {
                     style: { fontSize: 12 }
                   }}
                 />
+
                 <YAxis 
                   yAxisId="right" 
                   orientation="right"
@@ -205,7 +238,7 @@ export default function ProfessorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {filteredFeedbacks.slice(0, 5).map((feedback) => (
+              {sortedFeedbacks.map((feedback) => (
                 <div
                   key={feedback._id}
                   className="border-b pb-4 last:border-0"
@@ -227,7 +260,7 @@ export default function ProfessorDashboard() {
                     <strong>Topics:</strong> {feedback.topicsCovered.join(', ')}
                   </p>
                   <p className="text-sm">
-                    <strong>Challenging Concepts:</strong> {feedback.challengingConcepts}
+                    <strong>Overview:</strong> {feedback.overview}
                   </p>
                   {feedback.suggestions && (
                     <p className="text-sm mt-2 text-muted-foreground">
@@ -236,7 +269,7 @@ export default function ProfessorDashboard() {
                   )}
                 </div>
               ))}
-              {filteredFeedbacks.length === 0 && (
+              {sortedFeedbacks.length === 0 && (
                 <p className="text-muted-foreground text-center py-4">
                   No feedback data available for the selected date range
                 </p>
