@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+// use to create valid schemas. update this as we think of new fields
 const FeedbackSchema = new mongoose.Schema({
   taName: {
     type: String,
@@ -39,7 +40,7 @@ const FeedbackSchema = new mongoose.Schema({
     min: 1,
     max: 5,
   },
-  challengingConcepts: {
+  overview: {
     type: String,
     required: true,
   },

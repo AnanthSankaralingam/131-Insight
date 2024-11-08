@@ -15,10 +15,15 @@ import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AttendanceInput } from "./attendance-input";
 import { feedbackFormSchema, type FeedbackFormData, estimateToNumber } from "./schema";
+import { useRouter } from 'next/navigation'
 
+//TODO: implement dating so form expires for a class at some point
+//TODO: implement scheduled lambda handler to replace all data points with just averages and summaries,EXCEPT urgent matters
 export default function TAFeedbackForm() {
   const { toast } = useToast();
-  
+  const router = useRouter();
+
+  // define form with default vals set to Elias and 131 for now
   const form = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackFormSchema),
     defaultValues: {
@@ -30,9 +35,9 @@ export default function TAFeedbackForm() {
       attendanceEstimate: "medium",
       topicsCovered: "",
       studentEngagement: 3,
-      challengingConcepts: "",
+      overview: "",
       suggestions: "",
-      needsAttention: false,
+      needsAttention: false, //FIXME: urgent matters should persist but expire after some point.
     },
   });
 
@@ -48,7 +53,7 @@ export default function TAFeedbackForm() {
         ...values,
         attendanceCount: finalAttendanceCount,
       };
-
+      // send feedback to db
       const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: {
@@ -59,12 +64,14 @@ export default function TAFeedbackForm() {
 
       if (!response.ok) throw new Error('Failed to submit feedback');
 
+      // TODO: green check mark on success
       toast({
         title: "Success!",
         description: "Your feedback has been submitted.",
       });
 
       form.reset(form.getValues());
+      router.push('/');
     } catch (error) {
       toast({
         title: "Error",
@@ -198,7 +205,7 @@ export default function TAFeedbackForm() {
                         max={5}
                         step={1}
                         value={[field.value]}
-                        onValueChange={(vals) => field.onChange(vals[0])}
+                        onValueChange={(vals: any[]) => field.onChange(vals[0])}
                         className="w-full"
                       />
                     </FormControl>
@@ -209,13 +216,13 @@ export default function TAFeedbackForm() {
 
               <FormField
                 control={form.control}
-                name="challengingConcepts"
+                name="overview"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Challenging Concepts</FormLabel>
+                    <FormLabel>Overview</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Describe concepts students found challenging"
+                        placeholder="Describe what students found challenging, found easy, ..."
                         {...field}
                         value={field.value || ""}
                       />
@@ -250,7 +257,7 @@ export default function TAFeedbackForm() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">
-                        Needs Professor's Attention
+                        {"Needs Professor's Attention"}
                       </FormLabel>
                     </div>
                     <FormControl>

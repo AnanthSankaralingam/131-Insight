@@ -9,7 +9,7 @@ export const feedbackFormSchema = z.object({
   attendanceEstimate: z.enum(["low", "medium", "high"]).optional(),
   topicsCovered: z.string().min(2, "Topics covered are required"),
   studentEngagement: z.number().min(1).max(5),
-  challengingConcepts: z.string().min(2, "Please describe challenging concepts"),
+  overview: z.string().min(2, "Please describe challenging concepts"),
   suggestions: z.string(),
   needsAttention: z.boolean(),
 }).refine((data) => {
