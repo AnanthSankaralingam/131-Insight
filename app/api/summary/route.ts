@@ -5,7 +5,7 @@ import { AWSBedrock } from '@/services/AWSBedrock';
 // summarize ta feedback using bedrock and send it back to db
 export async function POST(req: Request) {
     try {
-      await dbConnect();
+      await dbConnect(); // is there a way to not reconnect to db every time?
       const { feedbackText } = await req.json();
   
       // Call the AWS Bedrock service to summarize the feedback
