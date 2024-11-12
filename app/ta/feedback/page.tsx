@@ -245,7 +245,6 @@ export default function TAFeedbackForm() {
                     <FormLabel>
                       Student Engagement Level: {field.value}
                     </FormLabel>{" "}
-                    {/* Display the value here */}
                     <FormControl>
                       <Slider
                         min={1}
