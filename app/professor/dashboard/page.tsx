@@ -65,9 +65,6 @@ export default function ProfessorDashboard() {
             professorName
           )}&courseCode=CMSC131`
         );
-        // const response = await fetch(
-        //   "/api/feedback?professorName=Elias%20Gonzalez&courseCode=CMSC131"
-        // );
         if (!response.ok) throw new Error("Failed to fetch feedback");
         const data = await response.json();
         setFeedbacks(data);

@@ -3,7 +3,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
@@ -12,10 +19,20 @@ import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { AttendanceInput } from "./attendance-input";
-import { feedbackFormSchema, type FeedbackFormData, estimateToNumber } from "./schema";
-import { useRouter } from 'next/navigation'
+import {
+  feedbackFormSchema,
+  type FeedbackFormData,
+  estimateToNumber,
+} from "./schema";
+import { useRouter } from "next/navigation";
 
 //TODO: implement dating so form expires for a class at some point
 //TODO: implement scheduled lambda handler to replace all data points with just averages and summaries,EXCEPT urgent matters
@@ -45,24 +62,27 @@ export default function TAFeedbackForm() {
 
   async function onSubmit(values: FeedbackFormData) {
     try {
-      const finalAttendanceCount = values.attendanceType === "exact" 
-        ? values.attendanceCount 
-        : estimateToNumber[values.attendanceEstimate as keyof typeof estimateToNumber];
+      const finalAttendanceCount =
+        values.attendanceType === "exact"
+          ? values.attendanceCount
+          : estimateToNumber[
+              values.attendanceEstimate as keyof typeof estimateToNumber
+            ];
 
       const submissionData = {
         ...values,
         attendanceCount: finalAttendanceCount,
       };
       // send feedback to db
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
+      const response = await fetch("/api/feedback", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(submissionData),
       });
 
-      if (!response.ok) throw new Error('Failed to submit feedback');
+      if (!response.ok) throw new Error("Failed to submit feedback");
 
       // TODO: green check mark on success
       toast({
@@ -71,7 +91,7 @@ export default function TAFeedbackForm() {
       });
 
       form.reset(form.getValues());
-      router.push('/');
+      router.push("/");
     } catch (error) {
       toast({
         title: "Error",
@@ -83,7 +103,10 @@ export default function TAFeedbackForm() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link href="/" className="inline-flex items-center text-primary hover:text-primary/90 mb-6">
+      <Link
+        href="/"
+        className="inline-flex items-center text-primary hover:text-primary/90 mb-6"
+      >
         <ChevronLeft className="h-4 w-4 mr-2" />
         Back to Home
       </Link>
@@ -103,7 +126,11 @@ export default function TAFeedbackForm() {
                     <FormItem>
                       <FormLabel>TA Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} value={field.value || ""} />
+                        <Input
+                          placeholder="John Doe"
+                          {...field}
+                          value={field.value || ""}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -116,7 +143,10 @@ export default function TAFeedbackForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Course Code</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select course" />
@@ -138,15 +168,22 @@ export default function TAFeedbackForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Professor Name</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select professor" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Elias Gonzalez">Elias Gonzalez</SelectItem>
-                          <SelectItem value="Pedram Sadeghian">Pedram Sadeghian</SelectItem>
+                          <SelectItem value="Elias Gonzalez">
+                            Elias Gonzalez
+                          </SelectItem>
+                          <SelectItem value="Pedram Sadeghian">
+                            Pedram Sadeghian
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -160,7 +197,10 @@ export default function TAFeedbackForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Attendance Input Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select input type" />
@@ -186,7 +226,11 @@ export default function TAFeedbackForm() {
                   <FormItem>
                     <FormLabel>Topics Covered</FormLabel>
                     <FormControl>
-                      <Input placeholder="Arrays, Loops, Functions" {...field} value={field.value || ""} />
+                      <Input
+                        placeholder="Arrays, Loops, Functions"
+                        {...field}
+                        value={field.value || ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -198,7 +242,9 @@ export default function TAFeedbackForm() {
                 name="studentEngagement"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Student Engagement Level (1-5)</FormLabel>
+                    <FormLabel>
+                      Student Engagement Level: {field.value}
+                    </FormLabel>{" "}
                     <FormControl>
                       <Slider
                         min={1}
@@ -221,7 +267,7 @@ export default function TAFeedbackForm() {
                   <FormItem>
                     <FormLabel>Overview</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Describe what students found challenging, found easy, ..."
                         {...field}
                         value={field.value || ""}
@@ -239,7 +285,7 @@ export default function TAFeedbackForm() {
                   <FormItem>
                     <FormLabel>Suggestions (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Any suggestions for improvement?"
                         {...field}
                         value={field.value || ""}
@@ -270,7 +316,9 @@ export default function TAFeedbackForm() {
                 )}
               />
 
-              <Button type="submit" className="w-full">Submit Feedback</Button>
+              <Button type="submit" className="w-full">
+                Submit Feedback
+              </Button>
             </form>
           </Form>
         </CardContent>
