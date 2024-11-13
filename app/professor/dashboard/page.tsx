@@ -1,16 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChevronLeft } from 'lucide-react';
-import Link from 'next/link';
-import { DateRange } from 'react-day-picker';
-import { addDays, format, isWithinInterval, startOfDay } from 'date-fns';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { DateRange } from "react-day-picker";
+import { addDays, format, isWithinInterval, startOfDay } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Feedback {
   _id: string;
@@ -28,6 +47,7 @@ interface Feedback {
 //TODO: prof should be able to dismiss urgent matters and they should be removed from db
 //TODO: summarize entries from most recent date
 export default function ProfessorDashboard() {
+  const [professorName, setProfessorName] = useState("");
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -40,25 +60,32 @@ export default function ProfessorDashboard() {
       try {
         // get feedback for specific name and class
         //TODO: add dropdown for which class and teacher
-        const response = await fetch('/api/feedback?professorName=Pedram%20Sadeghian&courseCode=CMSC131');
-        if (!response.ok) throw new Error('Failed to fetch feedback');
+        const response = await fetch(
+          `/api/feedback?professorName=${encodeURIComponent(
+            professorName
+          )}&courseCode=CMSC131`
+        );
+        if (!response.ok) throw new Error("Failed to fetch feedback");
         const data = await response.json();
         setFeedbacks(data);
       } catch (error) {
-        console.error('Error fetching feedback:', error);
+        console.error("Error fetching feedback:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFeedback();
-  }, []);
+    if (professorName) {
+      fetchFeedback();
+    }
+  }, [professorName, dateRange]);
 
-  // FIXME show sorted, with Urgent ones first  
+  // FIXME show sorted, with Urgent ones first
   // only show data based on range selected
-  const sortedFeedbacks = useMemo(() => { //useMemo hook only recalculates values when date range changes
+  const sortedFeedbacks = useMemo(() => {
+    //useMemo hook only recalculates values when date range changes
     return feedbacks
-      .filter(feedback => {
+      .filter((feedback) => {
         if (!dateRange?.from || !dateRange?.to) return true;
         const feedbackDate = startOfDay(new Date(feedback.date));
         return isWithinInterval(feedbackDate, {
@@ -70,10 +97,12 @@ export default function ProfessorDashboard() {
   }, [feedbacks, dateRange]);
 
   const engagementData = useMemo(() => {
-    const dateMap: { [key: string]: { engagement: number; attendance: number; count: number } } = {};
+    const dateMap: {
+      [key: string]: { engagement: number; attendance: number; count: number };
+    } = {};
 
     sortedFeedbacks.forEach((feedback) => {
-      const date = format(new Date(feedback.date), 'MMM d');
+      const date = format(new Date(feedback.date), "MMM d");
       if (!dateMap[date]) {
         dateMap[date] = {
           engagement: 0,
@@ -96,24 +125,40 @@ export default function ProfessorDashboard() {
   }, [sortedFeedbacks]);
 
   const urgentFeedbacks = useMemo(() => {
-    return sortedFeedbacks.filter(f => f.needsAttention);
+    return sortedFeedbacks.filter((f) => f.needsAttention);
   }, [sortedFeedbacks]);
 
   const averageEngagement = useMemo(() => {
     return sortedFeedbacks.length
-      ? sortedFeedbacks.reduce((acc, curr) => acc + curr.studentEngagement, 0) / sortedFeedbacks.length
+      ? sortedFeedbacks.reduce((acc, curr) => acc + curr.studentEngagement, 0) /
+          sortedFeedbacks.length
       : 0;
   }, [sortedFeedbacks]);
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Link href="/" className="inline-flex items-center text-primary hover:text-primary/90 mb-6">
+      <Link
+        href="/"
+        className="inline-flex items-center text-primary hover:text-primary/90 mb-6"
+      >
         <ChevronLeft className="h-4 w-4 mr-2" />
         Back to Home
       </Link>
 
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Professor Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Professor Dashboard</h1>
+          <Select onValueChange={setProfessorName} value={professorName}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select professor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Elias Gonzalez">Elias Gonzalez</SelectItem>
+              <SelectItem value="Pedram Sadeghian">Pedram Sadeghian</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -156,7 +201,9 @@ export default function ProfessorDashboard() {
             <CardTitle>Urgent Matters</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-primary">{urgentFeedbacks.length}</p>
+            <p className="text-3xl font-bold text-primary">
+              {urgentFeedbacks.length}
+            </p>
           </CardContent>
         </Card>
 
@@ -165,7 +212,9 @@ export default function ProfessorDashboard() {
             <CardTitle>Avg. Engagement</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{averageEngagement.toFixed(1)}/5</p>
+            <p className="text-3xl font-bold">
+              {averageEngagement.toFixed(1)}/5
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -179,34 +228,34 @@ export default function ProfessorDashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={engagementData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
+                <XAxis
                   dataKey="date"
                   tick={{ fontSize: 12 }}
                   interval="preserveStartEnd"
                 />
-                <YAxis 
+                <YAxis
                   yAxisId="left"
                   tick={{ fontSize: 12 }}
-                  label={{ 
-                    value: 'Engagement (1-5)',
+                  label={{
+                    value: "Engagement (1-5)",
                     angle: -90,
-                    position: 'insideLeft',
-                    style: { fontSize: 12 }
+                    position: "insideLeft",
+                    style: { fontSize: 12 },
                   }}
                 />
 
-                <YAxis 
-                  yAxisId="right" 
+                <YAxis
+                  yAxisId="right"
                   orientation="right"
                   tick={{ fontSize: 12 }}
-                  label={{ 
-                    value: 'Attendance',
+                  label={{
+                    value: "Attendance",
                     angle: 90,
-                    position: 'insideRight',
-                    style: { fontSize: 12 }
+                    position: "insideRight",
+                    style: { fontSize: 12 },
                   }}
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ fontSize: 12 }}
                   formatter={(value: number) => [value.toFixed(1)]}
                 />
@@ -240,15 +289,13 @@ export default function ProfessorDashboard() {
           <CardContent>
             <div className="space-y-6">
               {sortedFeedbacks.map((feedback) => (
-                <div
-                  key={feedback._id}
-                  className="border-b pb-4 last:border-0"
-                >
+                <div key={feedback._id} className="border-b pb-4 last:border-0">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="font-semibold">{feedback.courseCode}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {feedback.taName} - {format(new Date(feedback.date), 'PPP')}
+                        {feedback.taName} -{" "}
+                        {format(new Date(feedback.date), "PPP")}
                       </p>
                     </div>
                     {feedback.needsAttention && (
@@ -258,7 +305,7 @@ export default function ProfessorDashboard() {
                     )}
                   </div>
                   <p className="text-sm mb-2">
-                    <strong>Topics:</strong> {feedback.topicsCovered.join(', ')}
+                    <strong>Topics:</strong> {feedback.topicsCovered.join(", ")}
                   </p>
                   <p className="text-sm">
                     <strong>Overview:</strong> {feedback.overview}
