@@ -40,7 +40,7 @@ export default function ProfessorDashboard() {
       try {
         // get feedback for specific name and class
         //TODO: add dropdown for which class and teacher
-        const response = await fetch('/api/feedback?professorName=Elias%20Gonzalez&courseCode=CMSC131');
+        const response = await fetch('/api/feedback?professorName=Pedram%20Sadeghian&courseCode=CMSC131');
         if (!response.ok) throw new Error('Failed to fetch feedback');
         const data = await response.json();
         setFeedbacks(data);
