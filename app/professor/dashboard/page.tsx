@@ -50,6 +50,7 @@ export default function ProfessorDashboard() {
   const [professorName, setProfessorName] = useState("Elias Gonzalez");
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataReady, setDataReady] = useState(false); // only fetch summary when ready
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
@@ -100,34 +101,79 @@ export default function ProfessorDashboard() {
 
   // TODO get most recent only
   const getAllFeedbackText = (feedbacks: Feedback[]) => {
+    // Check if feedbacks array exists and has items
+    if (!feedbacks || feedbacks.length === 0) return "";
+    
+    // Safely map and join the feedbacks with null checks
     return feedbacks
-      .map(f => `TA Feedback: ${f.overview} `)
+      .filter(f => f && f.taName && f.overview) // Ensure required fields exist
+      .map(f => `Student ${f.taName}: ${f.overview}`)
       .join(" ");
   };
-
+  
   const fetchSummary = async (feedbackText: string) => {
     try {
+      // Don't make the API call if there's no text to summarize
+      if (!feedbackText.trim()) {
+        setLastClassSummary("Loading summary...");
+        return;
+      }
+  
       const response = await fetch("/api/summary", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ feedbackText }),
+        body: JSON.stringify({ 
+          feedbackText,
+          // Add a safety check property
+          hasFeedback: true 
+        }),
       });
-      if (!response.ok) throw new Error("Failed to fetch summary");
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      
+      if (!data || !data.summary) {
+        throw new Error("Invalid response format");
+      }
+      
       setLastClassSummary(data.summary);
     } catch (error) {
       console.error("Error fetching summary:", error);
+      setLastClassSummary("Unable to generate summary at this time.");
     }
   };
 
+  // Add a delay check effect
   useEffect(() => {
-    const feedbackText = getAllFeedbackText(sortedFeedbacks);
-    if (feedbackText) {
-      fetchSummary(feedbackText);
+    if (sortedFeedbacks && sortedFeedbacks.length > 0 && !dataReady) {
+      // Wait 3 seconds after initial data load before marking as ready
+      const timer = setTimeout(() => {
+        setDataReady(true);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [sortedFeedbacks]);
+  }, [dataReady, sortedFeedbacks]);
+
+  // Modify the summary effect to depend on dataReady
+  useEffect(() => {
+    if (!dataReady) {
+      setLastClassSummary("Loading summary...");
+      return;
+    }
+
+    if (sortedFeedbacks && sortedFeedbacks.length > 0) {
+      const feedbackText = getAllFeedbackText(sortedFeedbacks);
+      fetchSummary(feedbackText);
+    } else {
+      setLastClassSummary("No feedback available");
+    }
+  }, [sortedFeedbacks, dataReady]);
 
   const engagementData = useMemo(() => {
     const dateMap: {
