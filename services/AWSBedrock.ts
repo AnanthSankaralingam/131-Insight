@@ -6,7 +6,7 @@ import { defaultProvider } from "@aws-sdk/credential-provider-node";
   
 // class to hold all AWS bedrock functionality
 //FIXME switch to IAM role auth
-const REGION = "us-east-2";
+const REGION = "us-east-1";
 const client = new BedrockRuntimeClient({ 
   region: REGION,
   credentials: defaultProvider() // automatically chekcs env
@@ -33,7 +33,7 @@ export class AWSBedrock {
           contentType: "application/json",
           accept: "application/json",
           modelId: "meta.llama3-1-8b-instruct-v1:0",
-          inferenceProfileArn: "arn:aws:bedrock:us-east-2:339186615684:inference-profile/us.meta.llama3-1-8b-instruct-v1:0"
+          inferenceProfileArn: "arn:aws:bedrock:us-east-1:339186615684:inference-profile/us.meta.llama3-1-8b-instruct-v1:0"
       }
 
       const command = new InvokeModelCommand(input);

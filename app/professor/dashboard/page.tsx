@@ -47,13 +47,15 @@ interface Feedback {
 //TODO: prof should be able to dismiss urgent matters and they should be removed from db
 //TODO: summarize entries from most recent date
 export default function ProfessorDashboard() {
-  const [professorName, setProfessorName] = useState("");
+  const [professorName, setProfessorName] = useState("Elias Gonzalez");
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
   });
+
+  const [lastClassSummary, setLastClassSummary] = useState<string>(""); // to concat recent feedbacks and call api on
 
   useEffect(() => {
     const fetchFeedback = async () => {
@@ -95,6 +97,37 @@ export default function ProfessorDashboard() {
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [feedbacks, dateRange]);
+
+  // TODO get most recent only
+  const getAllFeedbackText = (feedbacks: Feedback[]) => {
+    return feedbacks
+      .map(f => `TA Feedback: ${f.overview} `)
+      .join(" ");
+  };
+
+  const fetchSummary = async (feedbackText: string) => {
+    try {
+      const response = await fetch("/api/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ feedbackText }),
+      });
+      if (!response.ok) throw new Error("Failed to fetch summary");
+      const data = await response.json();
+      setLastClassSummary(data.summary);
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+    }
+  };
+
+  useEffect(() => {
+    const feedbackText = getAllFeedbackText(sortedFeedbacks);
+    if (feedbackText) {
+      fetchSummary(feedbackText);
+    }
+  }, [sortedFeedbacks]);
 
   const engagementData = useMemo(() => {
     const dateMap: {
@@ -279,6 +312,25 @@ export default function ProfessorDashboard() {
                 />
               </LineChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Last Class Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+                        {loading ? (
+              <p className="text-muted-foreground text-center py-4">Loading summary...</p>
+            ) : lastClassSummary ? (
+              <p className="text-sm">{lastClassSummary}</p>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">
+                No recent class summary available
+              </p>
+            )}
+            </div>
           </CardContent>
         </Card>
 
